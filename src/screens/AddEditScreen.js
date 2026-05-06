@@ -7,13 +7,13 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import colors from "../constants/colors";
 import { searchWord } from "../services/dictionaryService";
 import { saveWord } from "../services/storageService";

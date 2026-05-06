@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { performBackup } from './backupService';
 
 const KEY = 'wordbook_words';
 
@@ -46,10 +47,12 @@ export const saveWord = async (word) => {
   if (idx >= 0) words[idx] = word;
   else words.push(word);
   await AsyncStorage.setItem(KEY, JSON.stringify(words));
+  await performBackup();
 };
 
 export const deleteWord = async (id) => {
   const words = await getWords();
   const updated = words.filter((w) => w.id !== id);
   await AsyncStorage.setItem(KEY, JSON.stringify(updated));
+  await performBackup();
 };

@@ -3,13 +3,12 @@ import * as Speech from "expo-speech";
 import { useState } from "react";
 import {
   Alert,
-  SafeAreaView,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import SectionBox from "../components/SectionBox";
 import colors from "../constants/colors";
 import { deleteWord } from "../services/storageService";

@@ -1,24 +1,45 @@
-﻿import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Speech from "expo-speech";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   FlatList,
-  SafeAreaView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
+  Switch,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AZStrip from "../components/AZStrip";
 import WordCard from "../components/WordCard";
 import colors from "../constants/colors";
 import { getWords } from "../services/storageService";
+import {
+  isAutoBackupEnabled,
+  setAutoBackupEnabled,
+  autoRestoreIfAvailable,
+} from "../services/backupService";
 
 export default function HomeScreen({ navigation }) {
   const [words, setWords] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLetter, setSelectedLetter] = useState("ALL");
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [autoBackup, setAutoBackup] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const restored = await autoRestoreIfAvailable();
+      if (restored) {
+        const data = await getWords();
+        setWords(data);
+      }
+      const backupEnabled = await isAutoBackupEnabled();
+      setAutoBackup(backupEnabled);
+    })();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,6 +68,11 @@ export default function HomeScreen({ navigation }) {
     Speech.speak(word, { language: "en-US", rate: 0.8 });
   };
 
+  const toggleAutoBackup = async (value) => {
+    setAutoBackup(value);
+    await setAutoBackupEnabled(value);
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       <View
@@ -62,23 +88,28 @@ export default function HomeScreen({ navigation }) {
         >
           My Word Book
         </Text>
-        <View
-          style={{
-            backgroundColor: colors.primaryLight,
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 20,
-          }}
-        >
-          <Text
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View
             style={{
-              fontSize: 12,
-              color: colors.primaryDark,
-              fontWeight: "600",
+              backgroundColor: colors.primaryLight,
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 20,
             }}
           >
-            {words.length} words
-          </Text>
+            <Text
+              style={{
+                fontSize: 12,
+                color: colors.primaryDark,
+                fontWeight: "600",
+              }}
+            >
+              {words.length} words
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => setSettingsVisible(true)}>
+            <MaterialCommunityIcons name="cog" size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
         </View>
       </View>
       <TextInput
@@ -154,6 +185,39 @@ export default function HomeScreen({ navigation }) {
       >
         <MaterialCommunityIcons name="plus" size={30} color={colors.white} />
       </TouchableOpacity>
+
+      <Modal
+        visible={settingsVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSettingsVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: '80%', backgroundColor: colors.white, borderRadius: 16, padding: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Settings</Text>
+              <TouchableOpacity onPress={() => setSettingsVisible(false)}>
+                <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.textPrimary }}>Automatic Backup</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>
+                  Automatically save your words to the Downloads folder. If you reinstall the app, words will be fetched automatically.
+                </Text>
+              </View>
+              <Switch
+                value={autoBackup}
+                onValueChange={toggleAutoBackup}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.white}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
