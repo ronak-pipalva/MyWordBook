@@ -29,6 +29,8 @@ const EMPTY_FORM = {
   meaningHi: "",
   example: "",
   notes: "",
+  synonyms: [],
+  antonyms: [],
   date: 0,
 };
 
@@ -54,15 +56,38 @@ export default function AddEditScreen({ navigation, route }) {
     setFormData((f) => ({ ...f, word: text }));
     setShowDropdown(true);
     if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    const clearFields = () => {
+      setFormData((f) => ({
+        ...f,
+        type: "",
+        phonetic: "",
+        meaning: "",
+        meaningGu: "",
+        meaningHi: "",
+        example: "",
+        notes: "",
+        synonyms: [],
+        antonyms: [],
+      }));
+    };
+
     if (text.length >= 2) {
       debounceRef.current = setTimeout(async () => {
         setLoadingDict(true);
         const results = await searchWord(text);
-        setSuggestions(results || []);
+        const fetchedSuggestions = results || [];
+        setSuggestions(fetchedSuggestions);
+
+        if (fetchedSuggestions.length === 0) {
+          clearFields();
+        }
+
         setLoadingDict(false);
       }, 400);
     } else {
       setSuggestions([]);
+      clearFields();
     }
   };
 
@@ -75,7 +100,29 @@ export default function AddEditScreen({ navigation, route }) {
     const meaning = def?.definition || "";
     const example = def?.example || "";
 
-    setFormData((f) => ({ ...f, word, phonetic, type, meaning, example }));
+    const allSynonyms = new Set();
+    const allAntonyms = new Set();
+    entry.meanings?.forEach((m) => {
+      m.synonyms?.forEach((s) => allSynonyms.add(s));
+      m.antonyms?.forEach((a) => allAntonyms.add(a));
+      m.definitions?.forEach((d) => {
+        d.synonyms?.forEach((s) => allSynonyms.add(s));
+        d.antonyms?.forEach((a) => allAntonyms.add(a));
+      });
+    });
+    const synonyms = Array.from(allSynonyms).slice(0, 10);
+    const antonyms = Array.from(allAntonyms).slice(0, 10);
+
+    setFormData((f) => ({
+      ...f,
+      word,
+      phonetic,
+      type,
+      meaning,
+      example,
+      synonyms,
+      antonyms,
+    }));
     setShowDropdown(false);
     setSuggestions([]);
 
@@ -430,6 +477,56 @@ export default function AddEditScreen({ navigation, route }) {
             value={formData.example}
             onChangeText={(v) => setFormData((f) => ({ ...f, example: v }))}
             placeholder="Use the word in a sentence..."
+          />
+
+          {/* Synonyms */}
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: colors.textSecondary,
+              marginBottom: 5,
+            }}
+          >
+            Synonyms (comma separated)
+          </Text>
+          <TextInput
+            style={[inputStyle, { minHeight: 50 }]}
+            multiline
+            numberOfLines={2}
+            value={formData.synonyms?.join(", ") || ""}
+            onChangeText={(v) =>
+              setFormData((f) => ({
+                ...f,
+                synonyms: v.split(",").map((s) => s.trim()).filter(Boolean),
+              }))
+            }
+            placeholder="e.g. articulate, fluent..."
+          />
+
+          {/* Antonyms */}
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "600",
+              color: colors.textSecondary,
+              marginBottom: 5,
+            }}
+          >
+            Antonyms (comma separated)
+          </Text>
+          <TextInput
+            style={[inputStyle, { minHeight: 50 }]}
+            multiline
+            numberOfLines={2}
+            value={formData.antonyms?.join(", ") || ""}
+            onChangeText={(v) =>
+              setFormData((f) => ({
+                ...f,
+                antonyms: v.split(",").map((s) => s.trim()).filter(Boolean),
+              }))
+            }
+            placeholder="e.g. inarticulate, hesitant..."
           />
 
           {/* Notes */}

@@ -1,31 +1,31 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { performBackup } from './backupService';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { performBackup } from "./backupService";
 
-const KEY = 'wordbook_words';
+const KEY = "wordbook_words";
 
 const SEED = [
   {
-    id: '1',
-    word: 'Eloquent',
-    type: 'adjective',
-    phonetic: '/ˈɛləkwənt/',
-    meaning: 'Fluent or persuasive in speaking or writing.',
-    meaningGu: 'પ્રવાહી અથવા પ્રભાવી રીતે બોલવું અથવા લખવું.',
-    meaningHi: 'धाराप्रवाह या प्रेरक तरीके से बोलना या लिखना।',
-    example: 'She gave an eloquent speech that moved the audience.',
-    notes: 'El + eloquent = words flowing out elegantly.',
+    id: "1",
+    word: "Eloquent",
+    type: "adjective",
+    phonetic: "/ˈɛləkwənt/",
+    meaning: "Fluent or persuasive in speaking or writing.",
+    meaningGu: "પ્રવાહી અથવા પ્રભાવી રીતે બોલવું અથવા લખવું.",
+    meaningHi: "धाराप्रवाह या प्रेरक तरीके से बोलना या लिखना।",
+    example: "She gave an eloquent speech that moved the audience.",
+    notes: "El + eloquent = words flowing out elegantly.",
     date: Date.now(),
   },
   {
-    id: '2',
-    word: 'Persevere',
-    type: 'verb',
-    phonetic: '/ˌpɜːrsɪˈvɪər/',
-    meaning: 'Continue steadfastly despite difficulty or delay.',
-    meaningGu: 'મુશ્કેલી છતાં મક્કમ રહેવું.',
-    meaningHi: 'कठिनाई के बावजूद दृढ़तापूर्वक जारी रखना।',
-    example: 'You must persevere if you want to achieve your goals.',
-    notes: 'Per = through. Push through every hardship!',
+    id: "2",
+    word: "Persevere",
+    type: "verb",
+    phonetic: "/ˌpɜːrsɪˈvɪər/",
+    meaning: "Continue steadfastly despite difficulty or delay.",
+    meaningGu: "મુશ્કેલી છતાં મક્કમ રહેવું.",
+    meaningHi: "कठिनाई के बावजूद दृढ़तापूर्वक जारी रखना।",
+    example: "You must persevere if you want to achieve your goals.",
+    notes: "Per = through. Push through every hardship!",
     date: Date.now(),
   },
 ];

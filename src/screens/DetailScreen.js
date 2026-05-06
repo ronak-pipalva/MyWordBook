@@ -1,14 +1,12 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import * as Speech from "expo-speech";
 import { useState } from "react";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import {
-  Alert,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import SectionBox from "../components/SectionBox";
 import colors from "../constants/colors";
 import { deleteWord } from "../services/storageService";
@@ -200,6 +198,96 @@ export default function DetailScreen({ navigation, route }) {
             bgColor={colors.surface}
             textColor={colors.textPrimary}
           />
+
+          {word.synonyms && word.synonyms.length > 0 && (
+            <View style={{ marginTop: 16 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "600",
+                  color: colors.textSecondary,
+                  marginBottom: 8,
+                  marginLeft: 4,
+                }}
+              >
+                Synonyms
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {word.synonyms.map((syn, index) => (
+                  <TouchableOpacity
+                    key={`syn-${index}`}
+                    onPress={() => {
+                      Clipboard.setStringAsync(syn);
+                    }}
+                    style={{
+                      backgroundColor: colors.primaryLight,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 16,
+                      marginRight: 8,
+                      borderWidth: 1,
+                      borderColor: colors.primaryMid,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.primaryDark,
+                        fontSize: 14,
+                        fontWeight: "500",
+                      }}
+                    >
+                      {syn}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {word.antonyms && word.antonyms.length > 0 && (
+            <View style={{ marginTop: 16 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "600",
+                  color: colors.textSecondary,
+                  marginBottom: 8,
+                  marginLeft: 4,
+                }}
+              >
+                Antonyms
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {word.antonyms.map((ant, index) => (
+                  <TouchableOpacity
+                    key={`ant-${index}`}
+                    onPress={() => {
+                      Clipboard.setStringAsync(ant);
+                    }}
+                    style={{
+                      backgroundColor: colors.surface,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 16,
+                      marginRight: 8,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: "500",
+                      }}
+                    >
+                      {ant}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
         {/* Date */}

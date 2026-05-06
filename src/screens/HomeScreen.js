@@ -1,26 +1,27 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Speech from "expo-speech";
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   FlatList,
+  Modal,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Modal,
-  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AZStrip from "../components/AZStrip";
 import WordCard from "../components/WordCard";
 import colors from "../constants/colors";
-import { getWords } from "../services/storageService";
 import {
+  autoRestoreIfAvailable,
   isAutoBackupEnabled,
   setAutoBackupEnabled,
-  autoRestoreIfAvailable,
 } from "../services/backupService";
+import { deleteWord, getWords } from "../services/storageService";
 
 export default function HomeScreen({ navigation }) {
   const [words, setWords] = useState([]);
@@ -73,6 +74,24 @@ export default function HomeScreen({ navigation }) {
     await setAutoBackupEnabled(value);
   };
 
+  const handleDeleteCard = (item) => {
+    Alert.alert("Delete word?", `"${item.word}" will be permanently deleted.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          console.log("delete: ", item.id);
+          await deleteWord(item.id);
+          console.log("after delete: ", item.id);
+          const data = await getWords();
+          console.log("getWords: ", data);
+          setWords(data);
+        },
+      },
+    ]);
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       <View
@@ -104,11 +123,15 @@ export default function HomeScreen({ navigation }) {
                 fontWeight: "600",
               }}
             >
-              {words.length} words
+              {filteredWords.length} words
             </Text>
           </View>
           <TouchableOpacity onPress={() => setSettingsVisible(true)}>
-            <MaterialCommunityIcons name="cog" size={24} color={colors.textSecondary} />
+            <MaterialCommunityIcons
+              name="cog"
+              size={24}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -141,6 +164,7 @@ export default function HomeScreen({ navigation }) {
             item={item}
             onPress={() => navigation.navigate("Detail", { word: item })}
             onSpeak={() => handleSpeak(item.word)}
+            onDelete={() => handleDeleteCard(item)}
           />
         )}
         ListEmptyComponent={
@@ -192,20 +216,75 @@ export default function HomeScreen({ navigation }) {
         animationType="fade"
         onRequestClose={() => setSettingsVisible(false)}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ width: '80%', backgroundColor: colors.white, borderRadius: 16, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Settings</Text>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              width: "80%",
+              backgroundColor: colors.white,
+              borderRadius: 16,
+              padding: 20,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                }}
+              >
+                Settings
+              </Text>
               <TouchableOpacity onPress={() => setSettingsVisible(false)}>
-                <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
+                <MaterialCommunityIcons
+                  name="close"
+                  size={24}
+                  color={colors.textSecondary}
+                />
               </TouchableOpacity>
             </View>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 10,
+              }}
+            >
               <View style={{ flex: 1, paddingRight: 10 }}>
-                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.textPrimary }}>Automatic Backup</Text>
-                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>
-                  Automatically save your words to the Downloads folder. If you reinstall the app, words will be fetched automatically.
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "500",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  Automatic Backup
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                    marginTop: 4,
+                  }}
+                >
+                  Automatically save your words to the Downloads folder. If you
+                  reinstall the app, words will be fetched automatically.
                 </Text>
               </View>
               <Switch

@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../constants/colors';
 
-export default function WordCard({ item, onPress, onSpeak }) {
+export default function WordCard(props) {
+  const { item, onPress, onSpeak, onDelete } = props;
   return (
     <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={styles.card}>
       <View style={styles.avatar}>
@@ -20,6 +21,9 @@ export default function WordCard({ item, onPress, onSpeak }) {
       <View style={styles.actions}>
         <TouchableOpacity onPress={onSpeak} hitSlop={10} style={styles.iconBtn}>
           <MaterialCommunityIcons name="volume-high" size={22} color={colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onDelete} hitSlop={10} style={styles.iconBtn}>
+          <MaterialCommunityIcons name="delete" size={22} color={colors.danger} />
         </TouchableOpacity>
         <TouchableOpacity onPress={onPress} hitSlop={10} style={styles.iconBtn}>
           <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textMuted} />
