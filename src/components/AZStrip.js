@@ -13,6 +13,7 @@ export default function AZStrip({ words, selectedLetter, onSelect }) {
         paddingVertical: 10,
         paddingHorizontal: 16,
         marginRight: 16,
+        marginBottom: 10,
       }}
     >
       <TouchableOpacity

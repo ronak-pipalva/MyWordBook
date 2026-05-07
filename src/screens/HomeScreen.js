@@ -81,12 +81,10 @@ export default function HomeScreen({ navigation }) {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          console.log("delete: ", item.id);
+          // Update UI immediately by filtering locally
+          setWords((prevWords) => prevWords.filter((w) => w.id !== item.id));
+          // Then perform the actual delete in background
           await deleteWord(item.id);
-          console.log("after delete: ", item.id);
-          const data = await getWords();
-          console.log("getWords: ", data);
-          setWords(data);
         },
       },
     ]);

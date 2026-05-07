@@ -47,12 +47,14 @@ export const saveWord = async (word) => {
   if (idx >= 0) words[idx] = word;
   else words.push(word);
   await AsyncStorage.setItem(KEY, JSON.stringify(words));
-  await performBackup();
+  // Perform backup in background, don't await it
+  performBackup().catch((err) => console.log("Backup failed:", err));
 };
 
 export const deleteWord = async (id) => {
   const words = await getWords();
   const updated = words.filter((w) => w.id !== id);
   await AsyncStorage.setItem(KEY, JSON.stringify(updated));
-  await performBackup();
+  // Perform backup in background, don't await it
+  performBackup().catch((err) => console.log("Backup failed:", err));
 };
