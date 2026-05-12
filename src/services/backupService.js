@@ -1,37 +1,28 @@
-/* eslint-disable import/namespace */
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as FileSystem from "expo-file-system";
-import { PermissionsAndroid, Platform } from "react-native";
+import { supabase } from "./supabase";
 
 const BACKUP_KEY = "wordbook_auto_backup";
 const WORDS_KEY = "wordbook_words";
 
-const BACKUP_PATH =
-  Platform.OS === "android"
-    ? "file:///storage/emulated/0/Download/mywordbook_backup.json"
-    : FileSystem.documentDirectory + "mywordbook_backup.json";
-
-const requestPermissions = async () => {
-  if (Platform.OS === "android") {
-    try {
-      const granted = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-      ]);
-      return (
-        granted["android.permission.READ_EXTERNAL_STORAGE"] ===
-          PermissionsAndroid.RESULTS.GRANTED &&
-        granted["android.permission.WRITE_EXTERNAL_STORAGE"] ===
-          PermissionsAndroid.RESULTS.GRANTED
-      );
-    } catch (err) {
-      console.warn(err);
-      return false;
-    }
-  }
-  return true;
+// Auth Functions
+export const register = async (email, password) => {
+  return await supabase.auth.signUp({ email, password });
 };
 
+export const login = async (email, password) => {
+  return await supabase.auth.signInWithPassword({ email, password });
+};
+
+export const logout = async () => {
+  return await supabase.auth.signOut();
+};
+
+export const getCurrentUser = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+};
+
+// Backup Functions
 export const isAutoBackupEnabled = async () => {
   const value = await AsyncStorage.getItem(BACKUP_KEY);
   return value === "true";
@@ -40,7 +31,7 @@ export const isAutoBackupEnabled = async () => {
 export const setAutoBackupEnabled = async (enabled) => {
   await AsyncStorage.setItem(BACKUP_KEY, enabled ? "true" : "false");
   if (enabled) {
-    await performBackup(); // perform immediately when turned on
+    await performBackup();
   }
 };
 
@@ -49,61 +40,60 @@ export const performBackup = async () => {
     const enabled = await isAutoBackupEnabled();
     if (!enabled) return;
 
-    const hasPermission = await requestPermissions();
-    if (!hasPermission && Platform.OS === "android") {
-      // Sometimes permission is denied but we can still write to Downloads using SAF,
-      // but sticking to direct path for simplicity.
-      return;
-    }
+    const user = await getCurrentUser();
+    if (!user) return;
 
     const wordsData = await AsyncStorage.getItem(WORDS_KEY);
-    if (wordsData) {
-      await FileSystem.writeAsStringAsync(BACKUP_PATH, wordsData);
-      console.log("Backup successful to", BACKUP_PATH);
-    }
+    if (!wordsData) return;
+
+    const words = JSON.parse(wordsData);
+
+    // Call sync-words edge function
+    const { data, error } = await supabase.functions.invoke("sync-words", {
+      body: { words },
+    });
+
+    if (error) throw error;
+    console.log("Cloud backup successful", data);
   } catch (err) {
-    console.log("Backup failed:", err);
+    console.log("Cloud backup failed:", err);
   }
 };
 
 export const autoRestoreIfAvailable = async () => {
   try {
-    const hasPermission = await requestPermissions();
-    if (!hasPermission && Platform.OS === "android") return false;
+    const user = await getCurrentUser();
+    if (!user) return false;
 
-    const fileInfo = await FileSystem.getInfoAsync(BACKUP_PATH);
-    if (fileInfo.exists) {
-      const backupData = await FileSystem.readAsStringAsync(BACKUP_PATH);
+    // Call restore-words edge function
+    const { data, error } = await supabase.functions.invoke("restore-words");
 
-      const parsedData = JSON.parse(backupData);
+    if (error) throw error;
 
-      // Only restore if it looks like an array of words
-      if (Array.isArray(parsedData) && parsedData.length > 0) {
-        // Check current data
-        const currentData = await AsyncStorage.getItem(WORDS_KEY);
-        // Only override if current data is null or empty, or only contains default seed length
-        // We'll just check if it's not set or has very few items (like the default 2 items)
-        let shouldRestore = false;
-        if (!currentData) {
+    if (data && data.words && Array.isArray(data.words) && data.words.length > 0) {
+      const currentData = await AsyncStorage.getItem(WORDS_KEY);
+      let shouldRestore = false;
+
+      if (!currentData) {
+        shouldRestore = true;
+      } else {
+        const parsedCurrent = JSON.parse(currentData);
+        // Only restore if local data is very small (default seeds)
+        if (parsedCurrent.length <= 2) {
           shouldRestore = true;
-        } else {
-          const parsedCurrent = JSON.parse(currentData);
-          if (parsedCurrent.length <= 2) {
-            shouldRestore = true;
-          }
         }
+      }
 
-        if (shouldRestore) {
-          await AsyncStorage.setItem(WORDS_KEY, backupData);
-          await AsyncStorage.setItem(BACKUP_KEY, "true"); // Auto-enable backup since we restored from one
-          console.log("Restored backup successfully");
-          return true;
-        }
+      if (shouldRestore) {
+        await AsyncStorage.setItem(WORDS_KEY, JSON.stringify(data.words));
+        await AsyncStorage.setItem(BACKUP_KEY, "true");
+        console.log("Restored words from cloud successfully");
+        return true;
       }
     }
     return false;
   } catch (err) {
-    console.log("Restore failed:", err);
+    console.log("Cloud restore failed:", err);
     return false;
   }
 };
