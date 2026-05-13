@@ -1,7 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { performBackup } from "./backupService";
+import { performBackup, deleteWordFromCloud } from "./backupService";
 
 const KEY = "wordbook_words";
+
+const uuidv4 = () => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 const SEED = [
   {
@@ -33,9 +41,25 @@ const SEED = [
 export const getWords = async () => {
   try {
     const data = await AsyncStorage.getItem(KEY);
-    if (data) return JSON.parse(data);
-    await AsyncStorage.setItem(KEY, JSON.stringify(SEED));
-    return SEED;
+    let words = data ? JSON.parse(data) : SEED;
+    
+    // Migration: Convert old numeric IDs to UUIDs
+    let migrated = false;
+    const updatedWords = words.map((w) => {
+      if (!w.id || !w.id.includes("-")) {
+        w.id = uuidv4();
+        migrated = true;
+      }
+      return w;
+    });
+
+    if (migrated) {
+      await AsyncStorage.setItem(KEY, JSON.stringify(updatedWords));
+      // Trigger a backup to sync the new UUIDs to the cloud
+      performBackup().catch(() => {});
+    }
+
+    return updatedWords;
   } catch {
     return SEED;
   }
@@ -43,11 +67,17 @@ export const getWords = async () => {
 
 export const saveWord = async (word) => {
   const words = await getWords();
+  
+  // Ensure the word has a valid UUID if it's new
+  if (!word.id || !word.id.includes("-")) {
+    word.id = uuidv4();
+  }
+
   const idx = words.findIndex((w) => w.id === word.id);
   if (idx >= 0) words[idx] = word;
   else words.push(word);
   await AsyncStorage.setItem(KEY, JSON.stringify(words));
-  // Perform backup in background, don't await it
+  // Perform backup in background and explicit cloud delete if enabled
   performBackup().catch(() => {});
 };
 
@@ -55,6 +85,12 @@ export const deleteWord = async (id) => {
   const words = await getWords();
   const updated = words.filter((w) => w.id !== id);
   await AsyncStorage.setItem(KEY, JSON.stringify(updated));
-  // Perform backup in background, don't await it
+  // Perform backup in background and explicit cloud delete if enabled
   performBackup().catch(() => {});
+  deleteWordFromCloud(id).catch(() => {});
+};
+
+export const clearWords = async () => {
+  await AsyncStorage.removeItem(KEY);
+  return SEED;
 };

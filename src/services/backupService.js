@@ -62,10 +62,49 @@ export const performBackup = async () => {
     });
 
     if (error) {
+      console.error("Backup error:", error);
       throw error;
     }
+    console.log("Backup successful");
   } catch (err) {
-    // Silent fail for background backup
+    console.error("Backup failed:", err);
+  }
+};
+
+export const deleteWordFromCloud = async (wordId) => {
+  try {
+    const enabled = await isAutoBackupEnabled();
+    if (!enabled) return;
+
+    const user = await getCurrentUser();
+    if (!user) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    const { data, error } = await supabase.functions.invoke("delete-word", {
+      body: { wordId },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (error) {
+      let errorMessage = error.message;
+      if (error.context) {
+        try {
+          const body = await error.context.json();
+          errorMessage = body.error || errorMessage;
+        } catch (e) {
+          // ignore
+        }
+      }
+      console.error("Cloud delete error:", errorMessage);
+      throw new Error(errorMessage);
+    }
+    console.log("Cloud delete successful");
+  } catch (err) {
+    console.error("Cloud delete failed:", err);
   }
 };
 

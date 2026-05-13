@@ -145,7 +145,7 @@ export default function AddEditScreen({ navigation, route }) {
     setSaving(true);
     const wordObj = {
       ...formData,
-      id: isEdit ? formData.id : Date.now().toString(),
+      id: isEdit ? formData.id : "", // storageService will generate UUID if empty
       date: isEdit ? formData.date : Date.now(),
     };
     await saveWord(wordObj);

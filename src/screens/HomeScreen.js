@@ -24,7 +24,7 @@ import {
   logout,
   setAutoBackupEnabled,
 } from "../services/backupService";
-import { deleteWord, getWords } from "../services/storageService";
+import { deleteWord, getWords, clearWords } from "../services/storageService";
 
 export default function HomeScreen({ navigation }) {
   const [words, setWords] = useState([]);
@@ -97,6 +97,8 @@ export default function HomeScreen({ navigation }) {
           setUser(null);
           setAutoBackup(false);
           await setAutoBackupEnabled(false);
+          const freshWords = await clearWords();
+          setWords(freshWords);
         },
       },
     ]);
