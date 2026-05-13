@@ -48,15 +48,24 @@ export const performBackup = async () => {
 
     const words = JSON.parse(wordsData);
 
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      return;
+    }
+    
     // Call sync-words edge function
     const { data, error } = await supabase.functions.invoke("sync-words", {
       body: { words },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
     });
 
-    if (error) throw error;
-    console.log("Cloud backup successful", data);
+    if (error) {
+      throw error;
+    }
   } catch (err) {
-    console.log("Cloud backup failed:", err);
+    // Silent fail for background backup
   }
 };
 
@@ -65,10 +74,21 @@ export const autoRestoreIfAvailable = async () => {
     const user = await getCurrentUser();
     if (!user) return false;
 
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      return false;
+    }
+    
     // Call restore-words edge function
-    const { data, error } = await supabase.functions.invoke("restore-words");
+    const { data, error } = await supabase.functions.invoke("restore-words", {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
     if (data && data.words && Array.isArray(data.words) && data.words.length > 0) {
       const currentData = await AsyncStorage.getItem(WORDS_KEY);
@@ -87,13 +107,11 @@ export const autoRestoreIfAvailable = async () => {
       if (shouldRestore) {
         await AsyncStorage.setItem(WORDS_KEY, JSON.stringify(data.words));
         await AsyncStorage.setItem(BACKUP_KEY, "true");
-        console.log("Restored words from cloud successfully");
         return true;
       }
     }
     return false;
   } catch (err) {
-    console.log("Cloud restore failed:", err);
     return false;
   }
 };

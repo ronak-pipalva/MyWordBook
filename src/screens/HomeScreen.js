@@ -13,6 +13,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AZStrip from "../components/AZStrip";
+import WordCard from "../components/WordCard";
 import AuthModal from "../components/AuthModal";
 import colors from "../constants/colors";
 import {

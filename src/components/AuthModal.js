@@ -18,6 +18,7 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -103,8 +104,18 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
               placeholder="Password"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!showPassword}
             />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <MaterialCommunityIcons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color={colors.textMuted}
+              />
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -191,6 +202,9 @@ const styles = StyleSheet.create({
     height: 48,
     fontSize: 15,
     color: colors.textPrimary,
+  },
+  eyeIcon: {
+    padding: 8,
   },
   authButton: {
     backgroundColor: colors.primary,
