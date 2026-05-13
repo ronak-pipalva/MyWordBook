@@ -15,10 +15,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AZStrip from "../components/AZStrip";
 import WordCard from "../components/WordCard";
+import AuthModal from "../components/AuthModal";
 import colors from "../constants/colors";
 import {
   autoRestoreIfAvailable,
+  getCurrentUser,
   isAutoBackupEnabled,
+  logout,
   setAutoBackupEnabled,
 } from "../services/backupService";
 import { deleteWord, getWords } from "../services/storageService";
@@ -28,10 +31,15 @@ export default function HomeScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLetter, setSelectedLetter] = useState("ALL");
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [authVisible, setAuthVisible] = useState(false);
+  const [user, setUser] = useState(null);
   const [autoBackup, setAutoBackup] = useState(false);
 
   useEffect(() => {
     (async () => {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      
       const restored = await autoRestoreIfAvailable();
       if (restored) {
         const data = await getWords();
@@ -70,8 +78,40 @@ export default function HomeScreen({ navigation }) {
   };
 
   const toggleAutoBackup = async (value) => {
+    if (value && !user) {
+      setAuthVisible(true);
+      return;
+    }
     setAutoBackup(value);
     await setAutoBackupEnabled(value);
+  };
+
+  const handleLogout = async () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+          setUser(null);
+          setAutoBackup(false);
+          await setAutoBackupEnabled(false);
+        },
+      },
+    ]);
+  };
+
+  const handleAuthSuccess = async (newUser) => {
+    setUser(newUser);
+    setAutoBackup(true);
+    await setAutoBackupEnabled(true);
+    // After login, try to restore words if local is empty
+    const restored = await autoRestoreIfAvailable();
+    if (restored) {
+      const data = await getWords();
+      setWords(data);
+    }
   };
 
   const handleDeleteCard = (item) => {
@@ -261,7 +301,7 @@ export default function HomeScreen({ navigation }) {
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 10,
+                marginBottom: 20,
               }}
             >
               <View style={{ flex: 1, paddingRight: 10 }}>
@@ -272,7 +312,7 @@ export default function HomeScreen({ navigation }) {
                     color: colors.textPrimary,
                   }}
                 >
-                  Automatic Backup
+                  Cloud Backup
                 </Text>
                 <Text
                   style={{
@@ -281,8 +321,7 @@ export default function HomeScreen({ navigation }) {
                     marginTop: 4,
                   }}
                 >
-                  Automatically save your words to the Downloads folder. If you
-                  reinstall the app, words will be fetched automatically.
+                  Sync your words securely to the cloud.
                 </Text>
               </View>
               <Switch
@@ -292,9 +331,47 @@ export default function HomeScreen({ navigation }) {
                 thumbColor={colors.white}
               />
             </View>
+
+            {user && (
+              <View
+                style={{
+                  marginTop: 10,
+                  paddingTop: 20,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.borderLight,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: colors.textSecondary,
+                    marginBottom: 12,
+                  }}
+                >
+                  Logged in as <Text style={{ fontWeight: "600", color: colors.textPrimary }}>{user.email}</Text>
+                </Text>
+                <TouchableOpacity
+                  onPress={handleLogout}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <MaterialCommunityIcons name="logout" size={20} color={colors.danger} />
+                  <Text style={{ color: colors.danger, fontWeight: "600" }}>Logout</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
+
+      <AuthModal
+        visible={authVisible}
+        onClose={() => setAuthVisible(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </SafeAreaView>
   );
 }
