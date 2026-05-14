@@ -10,10 +10,20 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "enableHermes": true
+      },
+      "env": {
+        "EAS_BUILD_ANDROID_MINIFY": "true"
       }
     },
-    "production": {}
+    "production": {
+      "android": {
+        "buildType": "app-bundle",
+        "enableHermes": true
+      }
+    }
   },
   "submit": {
     "production": {}
