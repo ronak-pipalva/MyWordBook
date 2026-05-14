@@ -14,11 +14,8 @@ export const login = async (email, password) => {
 };
 
 export const resetPassword = async (email) => {
-  return await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      shouldCreateUser: false, // Don't create new accounts via forgot password
-    },
+  return await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: null,
   });
 };
 
@@ -26,7 +23,7 @@ export const verifyResetOtp = async (email, token) => {
   return await supabase.auth.verifyOtp({
     email,
     token,
-    type: "email", // Magic code uses 'email' type
+    type: "recovery",
   });
 };
 
@@ -41,7 +38,9 @@ export const logout = async () => {
 };
 
 export const getCurrentUser = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   return user;
 };
 
@@ -71,11 +70,13 @@ export const performBackup = async () => {
 
     const words = JSON.parse(wordsData);
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.access_token) {
       return;
     }
-    
+
     // Call sync-words edge function
     const { data, error } = await supabase.functions.invoke("sync-words", {
       body: { words },
@@ -102,7 +103,9 @@ export const deleteWordFromCloud = async (wordId) => {
     const user = await getCurrentUser();
     if (!user) return;
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.access_token) return;
 
     const { data, error } = await supabase.functions.invoke("delete-word", {
@@ -136,11 +139,13 @@ export const autoRestoreIfAvailable = async () => {
     const user = await getCurrentUser();
     if (!user) return false;
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.access_token) {
       return false;
     }
-    
+
     // Call restore-words edge function
     const { data, error } = await supabase.functions.invoke("restore-words", {
       headers: {
@@ -152,7 +157,12 @@ export const autoRestoreIfAvailable = async () => {
       throw error;
     }
 
-    if (data && data.words && Array.isArray(data.words) && data.words.length > 0) {
+    if (
+      data &&
+      data.words &&
+      Array.isArray(data.words) &&
+      data.words.length > 0
+    ) {
       const currentData = await AsyncStorage.getItem(WORDS_KEY);
       let shouldRestore = false;
 

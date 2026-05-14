@@ -51,12 +51,17 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
             setForgotStep("otp");
           }
         } else if (forgotStep === "otp") {
-          const { data, error: verifyError } = await verifyResetOtp(email.trim(), otp.trim());
+          const { data, error: verifyError } = await verifyResetOtp(
+            email.trim(),
+            otp.trim(),
+          );
           if (verifyError) {
             setError(verifyError.message);
           } else {
             setError("");
-            setMessage("Code verified! You are now logged in. Set your new password.");
+            setMessage(
+              "Code verified! You are now logged in. Set your new password.",
+            );
             setUser(data.user);
             setForgotStep("password");
           }
@@ -123,7 +128,7 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
               ? forgotStep === "email"
                 ? "Enter your email to receive a verification code."
                 : forgotStep === "otp"
-                  ? "Enter the 6-digit code sent to your email."
+                  ? "Enter the 8-digit code sent to your email."
                   : "Enter your new password below."
               : isLogin
                 ? "Login to sync your words to the cloud."
@@ -162,11 +167,11 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
               />
               <TextInput
                 style={styles.input}
-                placeholder="6-digit code"
+                placeholder="8-digit code"
                 value={otp}
                 onChangeText={setOtp}
                 keyboardType="number-pad"
-                maxLength={6}
+                maxLength={8}
               />
             </View>
           )}
