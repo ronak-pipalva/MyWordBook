@@ -4,6 +4,7 @@ export default {
   primaryMid:    '#AFA9EC',
   primaryDark:   '#3C3489',
   teal:          '#1D9E75',
+  success:       '#1D9E75',
   tealBg:        '#E1F5EE',
   tealDark:      '#085041',
   amber:         '#BA7517',

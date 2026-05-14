@@ -13,6 +13,29 @@ export const login = async (email, password) => {
   return await supabase.auth.signInWithPassword({ email, password });
 };
 
+export const resetPassword = async (email) => {
+  return await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: false, // Don't create new accounts via forgot password
+    },
+  });
+};
+
+export const verifyResetOtp = async (email, token) => {
+  return await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "email", // Magic code uses 'email' type
+  });
+};
+
+export const updatePassword = async (newPassword) => {
+  return await supabase.auth.updateUser({
+    password: newPassword,
+  });
+};
+
 export const logout = async () => {
   return await supabase.auth.signOut();
 };

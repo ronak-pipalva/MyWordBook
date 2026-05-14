@@ -10,7 +10,13 @@ import {
   View,
 } from "react-native";
 import colors from "../constants/colors";
-import { login, register } from "../services/backupService";
+import {
+  login,
+  register,
+  resetPassword,
+  updatePassword,
+  verifyResetOtp,
+} from "../services/backupService";
 
 export default function AuthModal({ visible, onClose, onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -18,25 +24,62 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [user, setUser] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotStep, setForgotStep] = useState("email"); // email, otp, password
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
   const handleAuth = async () => {
-    if (!email || !password) {
+    if (!email || (!isForgotPassword && !password)) {
       setError("Please fill in all fields");
       return;
     }
     setError("");
+    setMessage("");
     setLoading(true);
     try {
-      const { data, error: authError } = isLogin
-        ? await login(email, password)
-        : await register(email, password);
-
-      if (authError) {
-        setError(authError.message);
+      if (isForgotPassword) {
+        if (forgotStep === "email") {
+          const { error: resetError } = await resetPassword(email);
+          if (resetError) {
+            setError(resetError.message);
+          } else {
+            setMessage("Verification code sent to your email.");
+            setForgotStep("otp");
+          }
+        } else if (forgotStep === "otp") {
+          const { data, error: verifyError } = await verifyResetOtp(email.trim(), otp.trim());
+          if (verifyError) {
+            setError(verifyError.message);
+          } else {
+            setError("");
+            setMessage("Code verified! You are now logged in. Set your new password.");
+            setUser(data.user);
+            setForgotStep("password");
+          }
+        } else if (forgotStep === "password") {
+          const { error: updateError } = await updatePassword(newPassword);
+          if (updateError) {
+            setError(updateError.message);
+          } else {
+            onAuthSuccess(user);
+            onClose();
+          }
+        }
       } else {
-        onAuthSuccess(data.user);
-        onClose();
+        const { data, error: authError } = isLogin
+          ? await login(email, password)
+          : await register(email, password);
+
+        if (authError) {
+          setError(authError.message);
+        } else {
+          onAuthSuccess(data.user);
+          onClose();
+        }
       }
     } catch (err) {
       setError("Something went wrong. Please try again.");
@@ -56,7 +99,15 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>
-              {isLogin ? "Welcome Back" : "Create Account"}
+              {isForgotPassword
+                ? forgotStep === "email"
+                  ? "Reset Password"
+                  : forgotStep === "otp"
+                    ? "Enter Code"
+                    : "New Password"
+                : isLogin
+                  ? "Welcome Back"
+                  : "Create Account"}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <MaterialCommunityIcons
@@ -68,55 +119,122 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
           </View>
 
           <Text style={styles.subtitle}>
-            {isLogin
-              ? "Login to sync your words to the cloud."
-              : "Register to start backing up your words."}
+            {isForgotPassword
+              ? forgotStep === "email"
+                ? "Enter your email to receive a verification code."
+                : forgotStep === "otp"
+                  ? "Enter the 6-digit code sent to your email."
+                  : "Enter your new password below."
+              : isLogin
+                ? "Login to sync your words to the cloud."
+                : "Register to start backing up your words."}
           </Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {message ? <Text style={styles.successText}>{message}</Text> : null}
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="email-outline"
-              size={20}
-              color={colors.textMuted}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Email Address"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons
-              name="lock-outline"
-              size={20}
-              color={colors.textMuted}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
-            >
+          {(!isForgotPassword || forgotStep === "email") && (
+            <View style={styles.inputContainer}>
               <MaterialCommunityIcons
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                name="email-outline"
                 size={20}
                 color={colors.textMuted}
+                style={styles.inputIcon}
               />
+              <TextInput
+                style={styles.input}
+                placeholder="Email Address"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+          )}
+
+          {isForgotPassword && forgotStep === "otp" && (
+            <View style={styles.inputContainer}>
+              <MaterialCommunityIcons
+                name="numeric"
+                size={20}
+                color={colors.textMuted}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="6-digit code"
+                value={otp}
+                onChangeText={setOtp}
+                keyboardType="number-pad"
+                maxLength={6}
+              />
+            </View>
+          )}
+
+          {isForgotPassword && forgotStep === "password" && (
+            <View style={styles.inputContainer}>
+              <MaterialCommunityIcons
+                name="lock-outline"
+                size={20}
+                color={colors.textMuted}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="New Password"
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <MaterialCommunityIcons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {!isForgotPassword && (
+            <View style={styles.inputContainer}>
+              <MaterialCommunityIcons
+                name="lock-outline"
+                size={20}
+                color={colors.textMuted}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <MaterialCommunityIcons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {isLogin && !isForgotPassword && (
+            <TouchableOpacity
+              onPress={() => setIsForgotPassword(true)}
+              style={styles.forgotPasswordButton}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
-          </View>
+          )}
 
           <TouchableOpacity
             style={[styles.authButton, loading && styles.disabledButton]}
@@ -127,18 +245,46 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
               <ActivityIndicator color={colors.white} />
             ) : (
               <Text style={styles.authButtonText}>
-                {isLogin ? "Login" : "Register"}
+                {isForgotPassword
+                  ? forgotStep === "email"
+                    ? "Send Code"
+                    : forgotStep === "otp"
+                      ? "Verify Code"
+                      : "Update Password"
+                  : isLogin
+                    ? "Login"
+                    : "Register"}
               </Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              {isForgotPassword
+                ? "Remember your password? "
+                : isLogin
+                  ? "Don't have an account? "
+                  : "Already have an account? "}
             </Text>
-            <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
+            <TouchableOpacity
+              onPress={() => {
+                if (isForgotPassword) {
+                  if (forgotStep === "email") {
+                    setIsForgotPassword(false);
+                  } else if (forgotStep === "otp") {
+                    setForgotStep("email");
+                  } else {
+                    setForgotStep("otp");
+                  }
+                } else {
+                  setIsLogin(!isLogin);
+                }
+                setError("");
+                setMessage("");
+              }}
+            >
               <Text style={styles.toggleText}>
-                {isLogin ? "Register" : "Login"}
+                {isForgotPassword ? "Login" : isLogin ? "Register" : "Login"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -246,5 +392,21 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 14,
     fontWeight: "700",
+  },
+  successText: {
+    color: colors.success || "#4CAF50",
+    fontSize: 13,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  forgotPasswordButton: {
+    alignSelf: "flex-end",
+    marginBottom: 20,
+    marginTop: -8,
+  },
+  forgotPasswordText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
