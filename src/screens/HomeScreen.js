@@ -13,9 +13,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AuthModal from "../components/AuthModal";
 import AZStrip from "../components/AZStrip";
 import WordCard from "../components/WordCard";
-import AuthModal from "../components/AuthModal";
 import colors from "../constants/colors";
 import {
   autoRestoreIfAvailable,
@@ -24,7 +24,7 @@ import {
   logout,
   setAutoBackupEnabled,
 } from "../services/backupService";
-import { deleteWord, getWords, clearWords } from "../services/storageService";
+import { clearWords, deleteWord, getWords } from "../services/storageService";
 
 export default function HomeScreen({ navigation }) {
   const [words, setWords] = useState([]);
@@ -70,7 +70,7 @@ export default function HomeScreen({ navigation }) {
           w.word.toLowerCase().includes(searchQuery.toLowerCase());
         return letterMatch && searchMatch;
       })
-      .sort((a, b) => a.word.localeCompare(b.word));
+      .sort((a, b) => (b.date || 0) - (a.date || 0));
   }, [words, selectedLetter, searchQuery]);
 
   const handleSpeak = (word) => {
@@ -188,6 +188,7 @@ export default function HomeScreen({ navigation }) {
           marginBottom: 10,
         }}
         placeholder="Search words..."
+        placeholderTextColor={colors.textMuted}
         value={searchQuery}
         onChangeText={setSearchQuery}
       />

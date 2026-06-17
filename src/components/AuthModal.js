@@ -1,21 +1,21 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import colors from "../constants/colors";
 import {
-  login,
-  register,
-  resetPassword,
-  updatePassword,
-  verifyResetOtp,
+    login,
+    register,
+    resetPassword,
+    updatePassword,
+    verifyResetOtp,
 } from "../services/backupService";
 
 export default function AuthModal({ visible, onClose, onAuthSuccess }) {
@@ -149,6 +149,7 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
               <TextInput
                 style={styles.input}
                 placeholder="Email Address"
+                placeholderTextColor={colors.textMuted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -168,6 +169,7 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
               <TextInput
                 style={styles.input}
                 placeholder="8-digit code"
+                placeholderTextColor={colors.textMuted}
                 value={otp}
                 onChangeText={setOtp}
                 keyboardType="number-pad"
@@ -187,6 +189,7 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
               <TextInput
                 style={styles.input}
                 placeholder="New Password"
+                placeholderTextColor={colors.textMuted}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry={!showPassword}
@@ -215,6 +218,7 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }) {
               <TextInput
                 style={styles.input}
                 placeholder="Password"
+                placeholderTextColor={colors.textMuted}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}

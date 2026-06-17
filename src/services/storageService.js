@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { performBackup, deleteWordFromCloud } from "./backupService";
+import { deleteWordFromCloud, performBackup } from "./backupService";
 
 const KEY = "wordbook_words";
 
@@ -67,18 +67,31 @@ export const getWords = async () => {
 
 export const saveWord = async (word) => {
   const words = await getWords();
-  
+
   // Ensure the word has a valid UUID if it's new
   if (!word.id || !word.id.includes("-")) {
     word.id = uuidv4();
   }
 
   const idx = words.findIndex((w) => w.id === word.id);
-  if (idx >= 0) words[idx] = word;
-  else words.push(word);
+
+  if (idx >= 0) {
+    // Editing existing word — update in place
+    words[idx] = word;
+  } else {
+    // Adding new word — check for duplicate name (case-insensitive)
+    const duplicate = words.find(
+      (w) => w.word.trim().toLowerCase() === word.word.trim().toLowerCase(),
+    );
+    if (duplicate) {
+      return { duplicate: true, existing: duplicate };
+    }
+    words.push(word);
+  }
+
   await AsyncStorage.setItem(KEY, JSON.stringify(words));
-  // Perform backup in background and explicit cloud delete if enabled
   performBackup().catch(() => {});
+  return { duplicate: false };
 };
 
 export const deleteWord = async (id) => {

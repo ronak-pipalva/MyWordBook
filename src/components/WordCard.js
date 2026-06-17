@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useState } from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 import colors from '../constants/colors';
 
 export default function WordCard(props) {
   const { item, onPress, onSpeak, onDelete } = props;
+  const [expanded, setExpanded] = useState(false);
   return (
     <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={styles.card}>
       <View style={styles.avatar}>
@@ -15,7 +16,21 @@ export default function WordCard(props) {
           <Text style={styles.wordText}>{item.word}</Text>
           {item.type ? <Text style={styles.typeText}>{' \u00B7 ' + item.type}</Text> : null}
         </View>
-        {item.meaning ? <Text style={styles.meaningText} numberOfLines={1}>{item.meaning}</Text> : null}
+        {item.meaning ? (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+          >
+            <Text style={styles.meaningText} numberOfLines={expanded ? undefined : 1}>
+              {item.meaning}
+            </Text>
+            {!expanded && item.meaning.length > 50 ? (
+              <Text style={styles.expandHint}>show more</Text>
+            ) : expanded ? (
+              <Text style={styles.expandHint}>show less</Text>
+            ) : null}
+          </TouchableOpacity>
+        ) : null}
         {item.meaningGu ? <Text style={styles.guText} numberOfLines={1}>{item.meaningGu}</Text> : null}
       </View>
       <View style={styles.actions}>
@@ -51,6 +66,7 @@ const styles = {
   wordText: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   typeText: { fontSize: 12, fontStyle: 'italic', color: colors.primaryMid },
   meaningText: { fontSize: 13, color: colors.textSecondary },
+  expandHint: { fontSize: 11, color: colors.primary, marginTop: 1 },
   guText: { fontSize: 12, color: colors.teal, marginTop: 2 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   iconBtn: { padding: 6 },

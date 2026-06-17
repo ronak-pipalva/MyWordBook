@@ -148,8 +148,25 @@ export default function AddEditScreen({ navigation, route }) {
       id: isEdit ? formData.id : "", // storageService will generate UUID if empty
       date: isEdit ? formData.date : Date.now(),
     };
-    await saveWord(wordObj);
+    const result = await saveWord(wordObj);
     setSaving(false);
+
+    if (result?.duplicate) {
+      Alert.alert(
+        "Word already exists",
+        `"${result.existing.word}" is already in your word book.`,
+        [
+          { text: "OK", style: "cancel" },
+          {
+            text: "View it",
+            onPress: () =>
+              navigation.replace("Detail", { word: result.existing }),
+          },
+        ],
+      );
+      return;
+    }
+
     navigation.goBack();
   };
 
@@ -162,7 +179,10 @@ export default function AddEditScreen({ navigation, route }) {
     paddingVertical: 10,
     fontSize: 15,
     marginBottom: 14,
+    color: colors.textPrimary,
   };
+
+  const placeholderColor = colors.textMuted;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
@@ -218,6 +238,7 @@ export default function AddEditScreen({ navigation, route }) {
               value={formData.word}
               onChangeText={handleWordChange}
               placeholder="e.g. Eloquent"
+              placeholderTextColor={placeholderColor}
               autoCapitalize="words"
               autoCorrect={false}
             />
@@ -333,6 +354,7 @@ export default function AddEditScreen({ navigation, route }) {
             value={formData.phonetic}
             onChangeText={(v) => setFormData((f) => ({ ...f, phonetic: v }))}
             placeholder="/fəˈnɛtɪk/"
+            placeholderTextColor={placeholderColor}
           />
 
           {/* Type Picker */}
@@ -477,6 +499,7 @@ export default function AddEditScreen({ navigation, route }) {
             value={formData.example}
             onChangeText={(v) => setFormData((f) => ({ ...f, example: v }))}
             placeholder="Use the word in a sentence..."
+            placeholderTextColor={placeholderColor}
           />
 
           {/* Synonyms */}
@@ -502,6 +525,7 @@ export default function AddEditScreen({ navigation, route }) {
               }))
             }
             placeholder="e.g. articulate, fluent..."
+            placeholderTextColor={placeholderColor}
           />
 
           {/* Antonyms */}
@@ -527,6 +551,7 @@ export default function AddEditScreen({ navigation, route }) {
               }))
             }
             placeholder="e.g. inarticulate, hesitant..."
+            placeholderTextColor={placeholderColor}
           />
 
           {/* Notes */}
@@ -547,6 +572,7 @@ export default function AddEditScreen({ navigation, route }) {
             value={formData.notes}
             onChangeText={(v) => setFormData((f) => ({ ...f, notes: v }))}
             placeholder="Your trick to remember this word..."
+            placeholderTextColor={placeholderColor}
           />
 
           {/* Save Button */}
